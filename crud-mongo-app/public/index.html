@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Thrinesh's User CRUD App</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>User Management</h1>
+
+  <form id="user-form">
+    <input type="text" id="name" placeholder="Name" required />
+    <input type="email" id="email" placeholder="Email" required />
+    <button type="submit" id="submit-btn">Add User</button>
+  </form>
+
+  <h2>All Users:</h2>
+  <ul id="user-list"></ul>
+
+  <script>
+    const userList = document.getElementById('user-list');
+  const form = document.getElementById('user-form');
+  const nameInput = document.getElementById('name');
+  const emailInput = document.getElementById('email');
+  const submitBtn = document.getElementById('submit-btn');
+
+  const API_URL = '/users';
+
+  let editingUserId = null; // Track if we're editing a user
+
+  async function fetchUsers() {
+    const res = await fetch(API_URL);
+    const users = await res.json();
+    userList.innerHTML = '';
+    users.forEach(user => {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        ${user.name} (${user.email})
+        <button onclick="startEditUser('${user._id}', '${user.name}', '${user.email}')">Edit</button>
+        <button onclick="deleteUser('${user._id}')">Delete</button>
+      `;
+      userList.appendChild(li);
+    });
+  }
+
+  function startEditUser(id, name, email) {
+    nameInput.value = name;
+    emailInput.value = email;
+    editingUserId = id;
+    submitBtn.textContent = 'Update User';
+  }
+
+  async function deleteUser(id) {
+    await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+    fetchUsers();
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const userData = {
+      name: nameInput.value,
+      email: emailInput.value
+    };
+
+    if (editingUserId) {
+      // Update existing user
+      await fetch(`${API_URL}/${editingUserId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData)
+      });
+      editingUserId = null;
+      submitBtn.textContent = 'Add User';
+    } else {
+      // Add new user
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData)
+      });
+    }
+
+    nameInput.value = '';
+    emailInput.value = '';
+    fetchUsers();
+  });
+
+  fetchUsers();
+  </script>
+</body>
+</html>
